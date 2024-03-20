@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Track, TrackDocument } from '../schemas/track.schema';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreateTrackDto } from './create-track.dto';
 
 @Controller('tracks')
@@ -21,6 +21,12 @@ export class TracksController {
 
   @Get()
   getAll(@Query('albumId') albumId: string) {
+    try {
+      new Types.ObjectId(albumId);
+    } catch {
+      return { error: 'Wrong Object ID' };
+    }
+
     if (albumId) {
       return this.trackModel.find({ album: albumId });
     } else {

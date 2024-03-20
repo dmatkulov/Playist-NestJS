@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Album, AlbumDocument } from '../schemas/album.schema';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateAlbumDto } from './create-album.dto';
 
@@ -25,6 +25,12 @@ export class AlbumsController {
 
   @Get()
   async getAll(@Query('artistId') artistId: string) {
+    try {
+      new Types.ObjectId(artistId);
+    } catch {
+      return { error: 'Wrong Object ID' };
+    }
+
     if (artistId) {
       return this.albumModel.find({ artist: artistId });
     } else {
