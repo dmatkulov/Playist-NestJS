@@ -23,7 +23,7 @@ export class ArtistsController {
   ) {}
 
   @Get()
-  async getAll() {
+  getAll() {
     return this.artistModel.find();
   }
 
@@ -32,7 +32,7 @@ export class ArtistsController {
     const artist = await this.artistModel.findById(id);
 
     if (!artist) {
-      throw new NotFoundException('Artist not found');
+      throw new NotFoundException('Artist not found!');
     }
 
     return artist;
