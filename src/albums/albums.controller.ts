@@ -7,12 +7,13 @@ import {
   Param,
   Post,
   Query,
+  UnprocessableEntityException,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Album, AlbumDocument } from '../schemas/album.schema';
-import { Model, Types } from 'mongoose';
+import mongoose, { Model, Types } from 'mongoose';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateAlbumDto } from './create-album.dto';
 
@@ -57,14 +58,22 @@ export class AlbumsController {
     @UploadedFile() file: Express.Multer.File,
     @Body() albumData: CreateAlbumDto,
   ) {
-    const album = new this.albumModel({
-      artist: albumData.artist,
-      title: albumData.title,
-      yearOfRelease: parseInt(albumData.yearOfRelease),
-      cover: file ? '/uploads/albums/' + file.filename : null,
-    });
+    try {
+      const album = new this.albumModel({
+        artist: albumData.artist,
+        title: albumData.title,
+        yearOfRelease: parseInt(albumData.yearOfRelease),
+        cover: file ? '/uploads/albums/' + file.filename : null,
+      });
 
-    return album.save();
+      return album.save();
+    } catch (e) {
+      if (e instanceof mongoose.Error.ValidationError) {
+        throw new UnprocessableEntityException(e);
+      }
+
+      throw e;
+    }
   }
 
   @Delete(':id')

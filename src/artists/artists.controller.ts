@@ -6,12 +6,13 @@ import {
   NotFoundException,
   Param,
   Post,
+  UnprocessableEntityException,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Artist, ArtistDocument } from '../schemas/artist.schema';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateArtistDto } from './create-artist.dto';
 
@@ -46,13 +47,21 @@ export class ArtistsController {
     @UploadedFile() file: Express.Multer.File,
     @Body() artistData: CreateArtistDto,
   ) {
-    const artist = new this.artistModel({
-      name: artistData.name,
-      about: artistData.about,
-      cover: file ? '/uploads/artists/' + file.filename : null,
-    });
+    try {
+      const artist = new this.artistModel({
+        name: artistData.name,
+        about: artistData.about,
+        cover: file ? '/uploads/artists/' + file.filename : null,
+      });
 
-    return artist.save();
+      return artist.save();
+    } catch (e) {
+      if (e instanceof mongoose.Error.ValidationError) {
+        throw new UnprocessableEntityException(e);
+      }
+
+      throw e;
+    }
   }
 
   @Delete(':id')

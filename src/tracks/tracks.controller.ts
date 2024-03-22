@@ -6,10 +6,11 @@ import {
   Param,
   Post,
   Query,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Track, TrackDocument } from '../schemas/track.schema';
-import { Model, Types } from 'mongoose';
+import mongoose, { Model, Types } from 'mongoose';
 import { CreateTrackDto } from './create-track.dto';
 
 @Controller('tracks')
@@ -36,13 +37,21 @@ export class TracksController {
 
   @Post()
   create(@Body() trackData: CreateTrackDto) {
-    const track = new this.trackModel({
-      album: trackData.album,
-      title: trackData.title,
-      duration: trackData.duration,
-    });
+    try {
+      const track = new this.trackModel({
+        album: trackData.album,
+        title: trackData.title,
+        duration: trackData.duration,
+      });
 
-    return track.save();
+      return track.save();
+    } catch (e) {
+      if (e instanceof mongoose.Error.ValidationError) {
+        throw new UnprocessableEntityException(e);
+      }
+
+      throw e;
+    }
   }
 
   @Delete('id')
