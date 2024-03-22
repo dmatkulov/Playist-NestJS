@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { compare, genSalt, hash } from 'bcrypt';
+import { Role } from '../enums/role.enum';
 
 const SALT_WORK_FACTOR = 10;
 
@@ -35,10 +36,9 @@ export class User {
 
   @Prop({
     required: true,
-    enum: ['user', 'admin'],
-    default: 'user',
+    default: Role.User,
   })
-  role: string;
+  roles: Role[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
@@ -59,7 +59,7 @@ UserSchema.pre('save', async function () {
 });
 
 UserSchema.set('toJSON', {
-  transform: (doc, ret) => {
+  transform: (_doc, ret) => {
     delete ret.password;
     return ret;
   },

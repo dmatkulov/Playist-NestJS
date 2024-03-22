@@ -32,5 +32,7 @@ export class TokenAuthGuard implements CanActivate {
     }
 
     request.user = user;
+
+    return true;
   }
 }
