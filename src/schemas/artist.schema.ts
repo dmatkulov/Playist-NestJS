@@ -1,8 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import mongoose, { Document } from 'mongoose';
+import { User } from './user.schema';
 
 @Schema()
 export class Artist {
+  @Prop({ ref: User.name, required: true })
+  user: mongoose.Schema.Types.ObjectId;
+
   @Prop({
     required: true,
     unique: true,

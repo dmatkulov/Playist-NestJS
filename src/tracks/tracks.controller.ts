@@ -6,12 +6,19 @@ import {
   Param,
   Post,
   Query,
+  Req,
   UnprocessableEntityException,
+  UseGuards,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Track, TrackDocument } from '../schemas/track.schema';
 import mongoose, { Model, Types } from 'mongoose';
 import { CreateTrackDto } from './create-track.dto';
+import { Roles } from '../decorators/roles.decorator';
+import { Role } from '../enums/role.enum';
+import { TokenAuthGuard } from '../auth/token-auth.guard';
+import { RolesGuard } from '../auth/roles-guard.guard';
+import { UserDocument } from '../schemas/user.schema';
 
 @Controller('tracks')
 export class TracksController {
@@ -35,10 +42,16 @@ export class TracksController {
     }
   }
 
+  @Roles(Role.User)
+  @UseGuards(TokenAuthGuard, RolesGuard)
   @Post()
-  create(@Body() trackData: CreateTrackDto) {
+  create(
+    @Body() trackData: CreateTrackDto,
+    @Req() req: Request & { user: UserDocument },
+  ) {
     try {
       const track = new this.trackModel({
+        user: req.user._id,
         album: trackData.album,
         title: trackData.title,
         duration: trackData.duration,
@@ -54,6 +67,8 @@ export class TracksController {
     }
   }
 
+  @Roles(Role.Admin)
+  @UseGuards(TokenAuthGuard, RolesGuard)
   @Delete('id')
   async deleteOne(@Param('id') id: string) {
     await this.trackModel.findByIdAndDelete(id);

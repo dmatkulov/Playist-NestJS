@@ -6,6 +6,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  Req,
   UnprocessableEntityException,
   UploadedFile,
   UseGuards,
@@ -20,6 +21,7 @@ import { TokenAuthGuard } from '../auth/token-auth.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { Role } from '../enums/role.enum';
 import { RolesGuard } from '../auth/roles-guard.guard';
+import { UserDocument } from '../schemas/user.schema';
 
 @Controller('artists')
 export class ArtistsController {
@@ -53,9 +55,11 @@ export class ArtistsController {
   create(
     @UploadedFile() file: Express.Multer.File,
     @Body() artistData: CreateArtistDto,
+    @Req() req: Request & { user: UserDocument },
   ) {
     try {
       const artist = new this.artistModel({
+        user: req.user._id,
         name: artistData.name,
         about: artistData.about,
         cover: file ? '/uploads/artists/' + file.filename : null,
@@ -71,8 +75,11 @@ export class ArtistsController {
     }
   }
 
+  @Roles(Role.Admin)
+  @UseGuards(TokenAuthGuard, RolesGuard)
   @Delete(':id')
   async deleteOne(@Param('id') id: string) {
     await this.artistModel.findByIdAndDelete(id);
+    return { message: 'Success' };
   }
 }

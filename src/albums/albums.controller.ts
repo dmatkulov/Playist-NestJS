@@ -7,8 +7,10 @@ import {
   Param,
   Post,
   Query,
+  Req,
   UnprocessableEntityException,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -16,6 +18,11 @@ import { Album, AlbumDocument } from '../schemas/album.schema';
 import mongoose, { Model, Types } from 'mongoose';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateAlbumDto } from './create-album.dto';
+import { Roles } from '../decorators/roles.decorator';
+import { Role } from '../enums/role.enum';
+import { TokenAuthGuard } from '../auth/token-auth.guard';
+import { RolesGuard } from '../auth/roles-guard.guard';
+import { UserDocument } from '../schemas/user.schema';
 
 @Controller('albums')
 export class AlbumsController {
@@ -50,6 +57,8 @@ export class AlbumsController {
     return album;
   }
 
+  @Roles(Role.User)
+  @UseGuards(TokenAuthGuard, RolesGuard)
   @Post()
   @UseInterceptors(
     FileInterceptor('cover', { dest: './public/uploads/albums' }),
@@ -57,9 +66,11 @@ export class AlbumsController {
   create(
     @UploadedFile() file: Express.Multer.File,
     @Body() albumData: CreateAlbumDto,
+    @Req() req: Request & { user: UserDocument },
   ) {
     try {
       const album = new this.albumModel({
+        user: req.user._id,
         artist: albumData.artist,
         title: albumData.title,
         yearOfRelease: parseInt(albumData.yearOfRelease),
@@ -76,6 +87,8 @@ export class AlbumsController {
     }
   }
 
+  @Roles(Role.Admin)
+  @UseGuards(TokenAuthGuard, RolesGuard)
   @Delete(':id')
   async deleteOne(@Param('id') id: string) {
     await this.albumModel.findByIdAndDelete(id);
