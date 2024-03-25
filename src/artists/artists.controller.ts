@@ -22,6 +22,9 @@ import { Roles } from '../decorators/roles.decorator';
 import { Role } from '../enums/role.enum';
 import { RolesGuard } from '../auth/roles-guard.guard';
 import { UserDocument } from '../schemas/user.schema';
+import { diskStorage } from 'multer';
+import * as path from 'path';
+import { randomUUID } from 'crypto';
 
 @Controller('artists')
 export class ArtistsController {
@@ -50,7 +53,16 @@ export class ArtistsController {
   @UseGuards(TokenAuthGuard, RolesGuard)
   @Post()
   @UseInterceptors(
-    FileInterceptor('cover', { dest: './public/uploads/artists' }),
+    FileInterceptor('cover', {
+      storage: diskStorage({
+        destination: './public/uploads/',
+        filename: (_req, file, cb) => {
+          const extension = path.extname(file.originalname);
+          const filename = path.join('artists', randomUUID() + extension);
+          cb(null, filename);
+        },
+      }),
+    }),
   )
   create(
     @UploadedFile() file: Express.Multer.File,
@@ -62,7 +74,7 @@ export class ArtistsController {
         user: req.user._id,
         name: artistData.name,
         about: artistData.about,
-        cover: file ? '/uploads/artists/' + file.filename : null,
+        cover: file ? file.filename : null,
       });
 
       return artist.save();
@@ -78,8 +90,7 @@ export class ArtistsController {
   @Roles(Role.Admin)
   @UseGuards(TokenAuthGuard, RolesGuard)
   @Delete(':id')
-  async deleteOne(@Param('id') id: string) {
-    await this.artistModel.findByIdAndDelete(id);
-    return { message: 'Success' };
+  deleteOne(@Param('id') id: string) {
+    this.artistModel.findByIdAndDelete(id);
   }
 }

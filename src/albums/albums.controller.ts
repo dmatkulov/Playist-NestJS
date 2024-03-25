@@ -14,9 +14,12 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Album, AlbumDocument } from '../schemas/album.schema';
-import mongoose, { Model, Types } from 'mongoose';
 import { FileInterceptor } from '@nestjs/platform-express';
+import * as path from 'path';
+import { diskStorage } from 'multer';
+import { randomUUID } from 'crypto';
+import mongoose, { Model, Types } from 'mongoose';
+import { Album, AlbumDocument } from '../schemas/album.schema';
 import { CreateAlbumDto } from './create-album.dto';
 import { Roles } from '../decorators/roles.decorator';
 import { Role } from '../enums/role.enum';
@@ -61,7 +64,16 @@ export class AlbumsController {
   @UseGuards(TokenAuthGuard, RolesGuard)
   @Post()
   @UseInterceptors(
-    FileInterceptor('cover', { dest: './public/uploads/albums' }),
+    FileInterceptor('cover', {
+      storage: diskStorage({
+        destination: './public/uploads/',
+        filename: (_req, file, cb) => {
+          const extension = path.extname(file.originalname);
+          const filename = path.join('albums', randomUUID() + extension);
+          cb(null, filename);
+        },
+      }),
+    }),
   )
   create(
     @UploadedFile() file: Express.Multer.File,
@@ -74,7 +86,7 @@ export class AlbumsController {
         artist: albumData.artist,
         title: albumData.title,
         yearOfRelease: parseInt(albumData.yearOfRelease),
-        cover: file ? '/uploads/albums/' + file.filename : null,
+        cover: file ? file.filename : null,
       });
 
       return album.save();
@@ -90,7 +102,7 @@ export class AlbumsController {
   @Roles(Role.Admin)
   @UseGuards(TokenAuthGuard, RolesGuard)
   @Delete(':id')
-  async deleteOne(@Param('id') id: string) {
-    await this.albumModel.findByIdAndDelete(id);
+  deleteOne(@Param('id') id: string) {
+    this.albumModel.findByIdAndDelete(id);
   }
 }

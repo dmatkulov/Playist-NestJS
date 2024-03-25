@@ -70,7 +70,7 @@ export class TracksController {
   @Roles(Role.Admin)
   @UseGuards(TokenAuthGuard, RolesGuard)
   @Delete('id')
-  async deleteOne(@Param('id') id: string) {
-    await this.trackModel.findByIdAndDelete(id);
+  deleteOne(@Param('id') id: string) {
+    this.trackModel.findByIdAndDelete(id);
   }
 }
